@@ -1,6 +1,4 @@
-import React from 'react';
 import { Loader2, AlertTriangle, Star } from 'lucide-react';
-import ReCAPTCHA from "react-google-recaptcha";
 
 export const Button = ({ children, onClick, variant = 'primary', className = '', type = 'button', disabled = false, loading = false }) => {
   const baseStyles = "px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed";
@@ -22,7 +20,7 @@ export const Input = ({ label, type = 'text', value, onChange, placeholder, requ
   <div className="mb-4">
     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label} {required && '*'}</label>
     {multiline ? (
-       <textarea value={value} onChange={onChange} placeholder={placeholder} rows={4} className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-white dark:border-gray-700 ${error ? 'border-red-500' : 'border-gray-300'}`} />
+      <textarea value={value} onChange={onChange} placeholder={placeholder} rows={4} className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-white dark:border-gray-700 ${error ? 'border-red-500' : 'border-gray-300'}`} />
     ) : (
       <input type={type} min={min} max={max} value={value} onChange={onChange} placeholder={placeholder} className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-white dark:border-gray-700 ${error ? 'border-red-500' : 'border-gray-300'}`} />
     )}
@@ -65,6 +63,7 @@ export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, loadi
   );
 };
 
+// Simple chart for ratings
 export const SimpleBarChart = ({ data, total }) => {
   if (total === 0) return <div className="text-gray-500 text-sm italic">No ratings yet.</div>;
 
@@ -86,23 +85,6 @@ export const SimpleBarChart = ({ data, total }) => {
           </div>
         );
       })}
-    </div>
-  );
-};
-
-// NEW: Google ReCAPTCHA Component
-export const Captcha = ({ onVerify }) => {
-  const onChange = (token) => {
-    // If token exists, user passed the check
-    onVerify(!!token); 
-  };
-
-  return (
-    <div className="mb-4 flex justify-center">
-      <ReCAPTCHA
-        sitekey="6LcXYBwsAAAAANP42YNBzfqzdMKc7kPaj8vNJwIX"
-        onChange={onChange}
-      />
     </div>
   );
 };
