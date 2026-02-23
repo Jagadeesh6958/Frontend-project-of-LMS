@@ -68,8 +68,8 @@ const UserProfile = () => {
     <button
       onClick={() => setActiveTab(id)}
       className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === id
-          ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
-          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
         }`}
     >
       <Icon size={18} />
@@ -105,37 +105,39 @@ const UserProfile = () => {
             </div>
           </div>
 
-          {/* Stats Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t dark:border-gray-700 pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded text-blue-600"><Award size={20} /></div>
-              <div>
-                <p className="text-sm text-gray-500">Courses</p>
-                <p className="font-bold text-gray-900 dark:text-white">{stats.coursesCompleted} Completed</p>
+          {/* Stats Bar - Only shown for students */}
+          {user.role !== 'admin' && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t dark:border-gray-700 pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded text-blue-600"><Award size={20} /></div>
+                <div>
+                  <p className="text-sm text-gray-500">Courses</p>
+                  <p className="font-bold text-gray-900 dark:text-white">{stats.coursesCompleted} Completed</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded text-green-600"><Shield size={20} /></div>
+                <div>
+                  <p className="text-sm text-gray-500">Certificates</p>
+                  <p className="font-bold text-gray-900 dark:text-white">{stats.certificates} Earned</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded text-purple-600"><Clock size={20} /></div>
+                <div>
+                  <p className="text-sm text-gray-500">Learning Hours</p>
+                  <p className="font-bold text-gray-900 dark:text-white">{stats.hoursLearned} Hours</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded text-gray-600"><Calendar size={20} /></div>
+                <div>
+                  <p className="text-sm text-gray-500">Streak</p>
+                  <p className="font-bold text-gray-900 dark:text-white">3 Days</p>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded text-green-600"><Shield size={20} /></div>
-              <div>
-                <p className="text-sm text-gray-500">Certificates</p>
-                <p className="font-bold text-gray-900 dark:text-white">{stats.certificates} Earned</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded text-purple-600"><Clock size={20} /></div>
-              <div>
-                <p className="text-sm text-gray-500">Learning Hours</p>
-                <p className="font-bold text-gray-900 dark:text-white">{stats.hoursLearned} Hours</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded text-gray-600"><Calendar size={20} /></div>
-              <div>
-                <p className="text-sm text-gray-500">Streak</p>
-                <p className="font-bold text-gray-900 dark:text-white">3 Days</p>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </Card>
 

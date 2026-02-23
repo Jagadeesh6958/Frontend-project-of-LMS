@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Loader2 } from 'lucide-react';
 import Layout from './components/Layout.jsx';
 import { Login, Register } from './pages/AuthPages.jsx';
-import { Dashboard, StudentBrowse, Classroom } from './pages/StudentPages.jsx';
+import { Dashboard, StudentBrowse, Classroom, QuizDashboard } from './pages/StudentPages.jsx';
 import { AdminCourses, AdminStudents, AdminCourseEditor, AdminSubmissions, AdminFeedback } from './pages/AdminPages.jsx';
 import UserProfile from './pages/UserProfile.jsx';
 import { AuthProvider, ThemeProvider, ToastProvider, AuthContext } from './context/Contexts.jsx';
@@ -40,6 +40,7 @@ const AppContent = () => {
         // UPDATED: Passed onNavigate prop here
         case 'admin-students': view = user.role === 'admin' ? <AdminStudents onNavigate={navigate} /> : <Dashboard onNavigate={navigate} />; break;
         case 'student-browse': view = <StudentBrowse onNavigate={navigate} />; break;
+        case 'quiz-dashboard': view = <QuizDashboard onNavigate={navigate} />; break;
         default: view = <Dashboard onNavigate={navigate} />;
       }
     }

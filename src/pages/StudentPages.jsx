@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { BookOpen, CheckCircle, PlayCircle, FileCheck, FileText, Loader2, Download, MessageSquare, UploadCloud, ArrowLeft } from 'lucide-react';
+import { BookOpen, CheckCircle, PlayCircle, FileCheck, FileText, HelpCircle, Loader2, Download, MessageSquare, UploadCloud, ArrowLeft } from 'lucide-react';
 import { api } from '../services/api.js';
 import { AuthContext, ToastContext } from '../context/Contexts.jsx';
 import { Button, Card, Badge, Input } from '../components/UI.jsx';
@@ -251,6 +251,11 @@ export const Classroom = ({ courseId, onNavigate }) => {
   const [feedback, setFeedback] = useState({ rating: 5, comment: '' });
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
+  // Quiz State
+  const [quizAnswers, setQuizAnswers] = useState({});
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [quizScore, setQuizScore] = useState(null);
+
   useEffect(() => {
     const load = async () => {
       const c = await api.getCourse(courseId);
@@ -263,9 +268,17 @@ export const Classroom = ({ courseId, onNavigate }) => {
       if (myEnrollment) setCompletedItems(myEnrollment.completedItems);
       setMySubmissions(subs);
       setLoading(false);
+
+      // Reset quiz state when active item changes (handled by useEffect below)
     };
     load();
   }, [courseId, user.id]);
+
+  useEffect(() => {
+    setQuizAnswers({});
+    setQuizSubmitted(false);
+    setQuizScore(null);
+  }, [activeItem]);
 
   const handleComplete = async () => {
     await api.updateProgress(user.id, courseId, activeItem.id);
@@ -310,6 +323,26 @@ export const Classroom = ({ courseId, onNavigate }) => {
     setShowFeedbackModal(false);
   };
 
+  const handleQuizSubmit = async () => {
+    let scoreCount = 0;
+    activeItem.questions.forEach((q, idx) => {
+      if (quizAnswers[idx] === q.correct) scoreCount++;
+    });
+    const finalScore = Math.round((scoreCount / activeItem.questions.length) * 100);
+    setQuizScore(finalScore);
+    setQuizSubmitted(true);
+
+    // Persist result
+    await api.saveQuizResult(user.id, courseId, activeItem.id, finalScore, activeItem.questions.length);
+
+    if (finalScore >= 60) {
+      handleComplete();
+      addToast(`Quiz passed with ${finalScore}%!`);
+    } else {
+      addToast(`Quiz score: ${finalScore}%. Try again to pass (min 60%)`, 'error');
+    }
+  };
+
   if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin" /></div>;
   if (!course) return <div className="p-8">Course not found.</div>;
 
@@ -329,7 +362,7 @@ export const Classroom = ({ courseId, onNavigate }) => {
           </Button>
         </div>
         <div className="flex-1">
-          {(course.content || []).map((item, idx) => (
+          {(course.content || []).map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveItem(item)}
@@ -337,7 +370,10 @@ export const Classroom = ({ courseId, onNavigate }) => {
             >
               <div className="text-gray-400">
                 {completedItems.includes(item.id) ? <CheckCircle size={18} className="text-green-500" /> :
-                  (item.type === 'video' ? <PlayCircle size={18} /> : (item.type === 'assignment' ? <FileCheck size={18} /> : (item.type === 'pdf' ? <FileText size={18} /> : <FileText size={18} />)))}
+                  (item.type === 'video' ? <PlayCircle size={18} /> :
+                    (item.type === 'assignment' ? <FileCheck size={18} /> :
+                      (item.type === 'pdf' ? <FileText size={18} /> :
+                        (item.type === 'quiz' ? <HelpCircle size={18} /> : <FileText size={18} />))))}
               </div>
               <div>
                 <p className={`text-sm font-medium ${activeItem?.id === item.id ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>{item.title}</p>
@@ -354,7 +390,7 @@ export const Classroom = ({ courseId, onNavigate }) => {
             <Card className="p-8">
               <div className="flex justify-between items-center mb-6 border-b dark:border-gray-700 pb-4">
                 <div>
-                  <Badge color={activeItem.type === 'assignment' ? 'purple' : (activeItem.type === 'pdf' ? 'red' : 'blue')}>{activeItem.type}</Badge>
+                  <Badge color={activeItem.type === 'assignment' ? 'purple' : (activeItem.type === 'pdf' ? 'red' : (activeItem.type === 'quiz' ? 'yellow' : 'blue'))}>{activeItem.type}</Badge>
                   <h1 className="text-2xl font-bold mt-2 text-gray-900 dark:text-white">{activeItem.title}</h1>
                 </div>
               </div>
@@ -441,10 +477,81 @@ export const Classroom = ({ courseId, onNavigate }) => {
                     )}
                   </div>
                 )}
+
+                {/* QUIZ LOGIC */}
+                {activeItem.type === 'quiz' && (
+                  <div className="space-y-8">
+                    {activeItem.questions.map((q, idx) => (
+                      <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border dark:border-gray-700">
+                        <p className="font-bold text-lg mb-4 text-gray-900 dark:text-white">
+                          <span className="text-blue-600 mr-2">Q{idx + 1}.</span> {q.text}
+                        </p>
+                        <div className="space-y-3">
+                          {q.options.map((opt, optIdx) => {
+                            const isSelected = quizAnswers[idx] === optIdx;
+                            const isCorrect = q.correct === optIdx;
+                            let bgColor = "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700";
+
+                            if (quizSubmitted) {
+                              if (isCorrect) bgColor = "bg-green-100 dark:bg-green-900/30 border-green-500 text-green-700 dark:text-green-300";
+                              else if (isSelected) bgColor = "bg-red-100 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-300";
+                            } else if (isSelected) {
+                              bgColor = "bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-700 dark:text-blue-300";
+                            }
+
+                            return (
+                              <button
+                                key={optIdx}
+                                disabled={quizSubmitted}
+                                onClick={() => setQuizAnswers({ ...quizAnswers, [idx]: optIdx })}
+                                className={`w-full text-left p-4 rounded-lg border-2 transition-all ${bgColor} ${!quizSubmitted && 'hover:border-blue-300 dark:hover:border-blue-700'}`}
+                              >
+                                <div className="flex justify-between items-center">
+                                  <span>{opt}</span>
+                                  {quizSubmitted && isCorrect && <CheckCircle size={18} className="text-green-500" />}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+
+                    {!quizSubmitted ? (
+                      <div className="pt-4 flex justify-center">
+                        <Button
+                          size="lg"
+                          onClick={handleQuizSubmit}
+                          disabled={Object.keys(quizAnswers).length < activeItem.questions.length}
+                          className="px-12"
+                        >
+                          Submit Quiz
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center p-8 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border-2 border-blue-200 dark:border-blue-800 animate-in fade-in zoom-in duration-300">
+                        <h3 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Quiz Results</h3>
+                        <div className="text-5xl font-black text-blue-600 mb-4">{quizScore}%</div>
+                        <p className={`text-lg font-medium ${quizScore >= 60 ? 'text-green-600' : 'text-red-600'}`}>
+                          {quizScore >= 60 ? 'Congratulations! You passed.' : 'You didn\'t pass this time. Try again!'}
+                        </p>
+                        {quizScore >= 60 ? (
+                          <Button variant="secondary" className="mt-6" onClick={() => onNavigate('quiz-dashboard')}>
+                            View All Results
+                          </Button>
+                        ) : (
+                          <Button variant="secondary" className="mt-6" onClick={() => { setQuizSubmitted(false); setQuizAnswers({}); }}>
+                            Retake Quiz
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* MARK COMPLETE BUTTON */}
-              {activeItem.type !== 'assignment' && !completedItems.includes(activeItem.id) && (
+              {activeItem.type !== 'assignment' && activeItem.type !== 'quiz' && !completedItems.includes(activeItem.id) && (
                 <Button onClick={handleComplete} className="w-full sm:w-auto">Mark as Completed</Button>
               )}
             </Card>
@@ -476,6 +583,108 @@ export const Classroom = ({ courseId, onNavigate }) => {
               <Button onClick={handleSubmitFeedback}>Submit Review</Button>
             </div>
           </Card>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const QuizDashboard = ({ onNavigate }) => {
+  const { user } = useContext(AuthContext);
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadResults = async () => {
+      const data = await api.getQuizResults(user.id);
+      setResults(data.sort((a, b) => new Date(b.date) - new Date(a.date)));
+      setLoading(false);
+    };
+    loadResults();
+  }, [user.id]);
+
+  if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin" /></div>;
+
+  const averageScore = results.length > 0
+    ? Math.round(results.reduce((acc, curr) => acc + curr.score, 0) / results.length)
+    : 0;
+
+  const totalPassed = results.filter(r => r.score >= 60).length;
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <Button variant="ghost" onClick={() => onNavigate('dashboard')} className="mb-4 pl-0">
+        <ArrowLeft size={16} /> Back to Dashboard
+      </Button>
+
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <HelpCircle className="text-blue-600" size={32} /> Quiz Performance
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Track your progress and assessment scores across all courses.</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+        <Card className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white border-none shadow-lg shadow-blue-500/20">
+          <div className="text-blue-100 text-sm font-medium uppercase tracking-wider mb-1">Average Score</div>
+          <div className="text-4xl font-black">{averageScore}%</div>
+          <div className="mt-4 w-full bg-white/20 h-2 rounded-full hidden sm:block">
+            <div className="bg-white h-2 rounded-full" style={{ width: `${averageScore}%` }}></div>
+          </div>
+        </Card>
+        <Card className="p-6 bg-gradient-to-br from-green-500 to-green-600 text-white border-none shadow-lg shadow-green-500/20">
+          <div className="text-green-100 text-sm font-medium uppercase tracking-wider mb-1">Quizzes Passed</div>
+          <div className="text-4xl font-black">{totalPassed}</div>
+          <div className="text-green-100 text-sm mt-1">of {results.length} attempts</div>
+        </Card>
+        <Card className="p-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Total Attempts</div>
+          <div className="text-4xl font-black text-gray-900 dark:text-white">{results.length}</div>
+          <div className="text-blue-600 dark:text-blue-400 text-sm mt-1 font-medium italic">Keep pushing! 🚀</div>
+        </Card>
+      </div>
+
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Recent Activity</h2>
+      {results.length === 0 ? (
+        <Card className="p-12 text-center bg-gray-50 dark:bg-gray-800/50 border-dashed">
+          <HelpCircle className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+          <p className="text-gray-500 mb-6">You haven't taken any quizzes yet.</p>
+          <Button onClick={() => onNavigate('student-browse')}>Find a Course</Button>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {results.map(r => (
+            <Card key={r.id} className="p-5 flex flex-col sm:flex-row items-center justify-between gap-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-5 w-full sm:w-auto">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${r.score >= 60 ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : 'bg-red-100 text-red-600 dark:bg-red-900/30'}`}>
+                  {r.score >= 60 ? <CheckCircle size={32} /> : <ArrowLeft className="rotate-45" size={32} />}
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 dark:text-white text-lg">{r.quizTitle}</h3>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-sm text-gray-500 font-medium">{r.courseTitle}</span>
+                    <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                    <span className="text-xs text-gray-400">{new Date(r.date).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
+                <div className="text-right">
+                  <div className={`text-2xl font-black ${r.score >= 60 ? 'text-green-600' : 'text-red-600'}`}>
+                    {r.score}%
+                  </div>
+                  <Badge color={r.score >= 60 ? 'green' : 'red'}>
+                    {r.score >= 60 ? 'Passed' : 'Failed'}
+                  </Badge>
+                </div>
+                <Button variant="secondary" size="sm" onClick={() => onNavigate(`classroom/${r.courseId}`)}>
+                  Review
+                </Button>
+              </div>
+            </Card>
+          ))}
         </div>
       )}
     </div>

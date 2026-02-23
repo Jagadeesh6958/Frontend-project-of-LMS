@@ -10,6 +10,7 @@ export const STORAGE_KEYS = {
   ENROLLMENTS: 'lms_enrollments_v2',
   SUBMISSIONS: 'lms_submissions_v2',
   FEEDBACK: 'lms_feedback_v2', // New Key
+  QUIZ_RESULTS: 'lms_quiz_results_v2',
   SESSION: 'lms_session_v2',
   THEME: 'lms_theme_v2'
 };
@@ -29,7 +30,17 @@ const INITIAL_DATA = {
       content: [
         { id: 'l1', title: 'Welcome & Setup', type: 'video', duration: '10:00', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
         { id: 'l2', title: 'Understanding Hooks', type: 'text', body: 'Hooks let you use state and other React features without writing a class...' },
-        { id: 'a1', title: 'Build a Custom Hook', type: 'assignment', description: 'Create a useFetch hook that handles loading and errors. Submit the GitHub Gist link.' }
+        { id: 'a1', title: 'Build a Custom Hook', type: 'assignment', description: 'Create a useFetch hook that handles loading and errors. Submit the GitHub Gist link.' },
+        {
+          id: 'q1',
+          title: 'React Hooks Quiz',
+          type: 'quiz',
+          questions: [
+            { id: 'q1_1', text: 'Which hook is used for side effects?', options: ['useState', 'useEffect', 'useContext', 'useReducer'], correct: 1 },
+            { id: 'q1_2', text: 'Rules of hooks: Can hooks be called inside loops?', options: ['Yes', 'No'], correct: 1 },
+            { id: 'q1_3', text: 'What does useState return?', options: ['The state value', 'A function to update state', 'An array with state and setter', 'An object'], correct: 2 }
+          ]
+        }
       ]
     },
     {
@@ -98,7 +109,8 @@ const INITIAL_DATA = {
   ],
   enrollments: [],
   submissions: [],
-  feedback: [] // New initial data
+  feedback: [], // New initial data
+  quizResults: []
 };
 
 export const initializeDB = () => {
@@ -134,6 +146,7 @@ export const initializeDB = () => {
     if (!localStorage.getItem(STORAGE_KEYS.ENROLLMENTS)) localStorage.setItem(STORAGE_KEYS.ENROLLMENTS, JSON.stringify(INITIAL_DATA.enrollments));
     if (!localStorage.getItem(STORAGE_KEYS.SUBMISSIONS)) localStorage.setItem(STORAGE_KEYS.SUBMISSIONS, JSON.stringify(INITIAL_DATA.submissions));
     if (!localStorage.getItem(STORAGE_KEYS.FEEDBACK)) localStorage.setItem(STORAGE_KEYS.FEEDBACK, JSON.stringify(INITIAL_DATA.feedback));
+    if (!localStorage.getItem(STORAGE_KEYS.QUIZ_RESULTS)) localStorage.setItem(STORAGE_KEYS.QUIZ_RESULTS, JSON.stringify(INITIAL_DATA.quizResults));
   }
 
   if (dataChanged) {
@@ -383,5 +396,40 @@ export const api = {
       totalCourses: courses.length,
       activeEnrollments: enrollments.length
     };
+  },
+
+  // --- Quiz Results ---
+  saveQuizResult: async (userId, courseId, quizId, score, totalQuestions) => {
+    await delay(300);
+    const results = safeGet(STORAGE_KEYS.QUIZ_RESULTS);
+    const newResult = {
+      id: Date.now().toString(),
+      userId,
+      courseId,
+      quizId,
+      score,
+      totalQuestions,
+      date: new Date().toISOString()
+    };
+    results.push(newResult);
+    localStorage.setItem(STORAGE_KEYS.QUIZ_RESULTS, JSON.stringify(results));
+    return newResult;
+  },
+
+  getQuizResults: async (userId) => {
+    await delay(300);
+    const results = safeGet(STORAGE_KEYS.QUIZ_RESULTS);
+    const courses = safeGet(STORAGE_KEYS.COURSES);
+    return results
+      .filter(r => r.userId === userId)
+      .map(r => {
+        const course = courses.find(c => String(c.id) === String(r.courseId));
+        const quiz = course?.content?.find(i => i.id === r.quizId);
+        return {
+          ...r,
+          courseTitle: course?.title || 'Unknown Course',
+          quizTitle: quiz?.title || 'Unknown Quiz'
+        };
+      });
   }
 };

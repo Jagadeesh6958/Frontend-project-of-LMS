@@ -7,10 +7,10 @@ const Navbar = ({ onNavigate }) => {
   const { user, logout } = useContext(AuthContext);
   const { isDark, toggleTheme } = useContext(ThemeContext);
   const [menuOpen, setMenuOpen] = useState(false);
-  
+
   const NavItem = ({ label, page }) => (
-    <button 
-      onClick={() => { onNavigate(page); setMenuOpen(false); }} 
+    <button
+      onClick={() => { onNavigate(page); setMenuOpen(false); }}
       className="block w-full text-left px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
     >
       {label}
@@ -37,7 +37,12 @@ const Navbar = ({ onNavigate }) => {
                     <Button variant="ghost" onClick={() => onNavigate('admin-courses')}>Courses</Button>
                     <Button variant="ghost" onClick={() => onNavigate('admin-students')}>Students</Button>
                   </>
-                ) : <Button variant="ghost" onClick={() => onNavigate('student-browse')}>Browse</Button>}
+                ) : (
+                  <>
+                    <Button variant="ghost" onClick={() => onNavigate('student-browse')}>Browse</Button>
+                    <Button variant="ghost" onClick={() => onNavigate('quiz-dashboard')}>Quizzes</Button>
+                  </>
+                )}
                 <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2"></div>
                 <div className="flex items-center gap-2 cursor-pointer" onClick={() => onNavigate('profile')}>
                   <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold">{user.name[0]}</div>
@@ -54,7 +59,7 @@ const Navbar = ({ onNavigate }) => {
           <div className="pt-2 pb-3 space-y-1">
             <div className="px-4 py-2 flex justify-between items-center">
               <span className="text-gray-500 dark:text-gray-400">Dark Mode</span>
-              <button onClick={toggleTheme} className="p-1">{isDark ? <Sun size={18}/> : <Moon size={18}/>}</button>
+              <button onClick={toggleTheme} className="p-1">{isDark ? <Sun size={18} /> : <Moon size={18} />}</button>
             </div>
             {user ? (
               <>
@@ -65,7 +70,12 @@ const Navbar = ({ onNavigate }) => {
                     <NavItem label="Manage Courses" page="admin-courses" />
                     <NavItem label="Manage Students" page="admin-students" />
                   </>
-                ) : <NavItem label="Browse Courses" page="student-browse" />}
+                ) : (
+                  <>
+                    <NavItem label="Browse Courses" page="student-browse" />
+                    <NavItem label="My Quizzes" page="quiz-dashboard" />
+                  </>
+                )}
                 <button onClick={() => { logout(); onNavigate('login'); }} className="block w-full text-left px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">Sign Out</button>
               </>
             ) : (
